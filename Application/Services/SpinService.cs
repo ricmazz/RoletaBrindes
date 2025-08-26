@@ -24,6 +24,19 @@ public class SpinService
         await conn.OpenAsync();
         using var tx = conn.BeginTransaction(IsolationLevel.RepeatableRead);
 
+        bool hasParticipantWithPhone = await _participants.HasUserWithPhoneAsync(phone, tx);
+
+        if (hasParticipantWithPhone)
+        {
+            return new SpinResponse
+            {
+                Won = false,
+                Message = "Obrigado por participar, mas este telefone já foi utilizado para o sorteio.",
+                Segments = new(),
+                TargetIndex = -1
+            };
+        }
+        
         // Upsert participante
         var participantId = await _participants.UpsertByPhoneAsync(name.Trim(), phone.Trim(), tx);
 

@@ -21,4 +21,16 @@ public class ParticipantRepository(IConnectionFactory f) : IParticipantRepositor
                     RETURNING id";
         return await conn.ExecuteScalarAsync<int>(sql, new { name, phone }, tx);
     }
+    
+    public async Task<bool> HasUserWithPhoneAsync(string phone, IDbTransaction? tx = null)
+    {
+        var conn = tx?.Connection ?? f.NewConnection();
+        if (conn.State != ConnectionState.Open)
+        {
+            if (conn is DbConnection dbc) await dbc.OpenAsync();
+            else conn.Open();
+        }
+        var sql = @"SELECT EXISTS(SELECT 1 FROM participants WHERE phone = @phone)";
+        return await conn.QuerySingleAsync<bool>(sql, new { phone }, tx);
+    }
 }
