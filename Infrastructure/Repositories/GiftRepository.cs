@@ -25,6 +25,22 @@ public class GiftRepository(IConnectionFactory f) : IGiftRepository
         return list.ToList();
     }
 
+    public async Task<IReadOnlyList<Gift>> ListAllAsync(IDbTransaction? tx = null)
+    {
+        var conn = tx?.Connection ?? f.NewConnection();
+        if (conn.State != ConnectionState.Open)
+        {
+            if (conn is DbConnection dbc) await dbc.OpenAsync();
+            else conn.Open();
+        }
+        // FOR UPDATE só se estiver dentro de transação
+        var sql = tx is null
+            ? "SELECT * FROM gifts ORDER BY id"
+            : "SELECT * FROM gifts ORDER BY id FOR UPDATE";
+        var list = await conn.QueryAsync<Gift>(sql, transaction: tx);
+        return list.ToList();
+    }
+    
     public async Task<Gift?> GetByIdAsync(int id, IDbTransaction? tx = null)
     {
         var conn = tx?.Connection ?? f.NewConnection();
